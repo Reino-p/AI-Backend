@@ -1,14 +1,14 @@
-from fastapi import APIRouter
+# app/api/plan.py
+from fastapi import APIRouter, HTTPException
 from app.agents.planner import generate_plan
-from app.schemas.plan import PlanResponse
+from app.schemas.plan import PlanRequest, PlanResponse
 
 router = APIRouter(prefix="/plan", tags=["plan"])
 
 @router.post("/generate", response_model=PlanResponse)
-async def generate(body: dict):
-    return await generate_plan(
-        goal=body.get("goal", "Learn SQL"),
-        level=body.get("level", "beginner"),
-        minutes=int(body.get("minutes", 45)),
-        deadline=body.get("deadline", "in 4 weeks"),
-    )
+async def generate(body: PlanRequest):
+    try:
+        return await generate_plan(body)
+    except Exception as e:
+        # keep errors clean for the client
+        raise HTTPException(status_code=500, detail=f"Planner failed: {e}")
