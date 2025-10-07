@@ -1,4 +1,3 @@
-# app/api/plan.py
 from fastapi import APIRouter, HTTPException
 from app.agents.planner import generate_plan
 from app.schemas.plan import PlanRequest, PlanResponse
