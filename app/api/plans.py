@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import Session, select
 from app.db.session import get_session
 from app.db.models import Plan, PlanMilestone, PlanTask
@@ -60,3 +60,13 @@ def get_plan(plan_id: int, s: Session = Depends(get_session)):
         tasks=[PlanTaskOut(id=t.id, order_index=t.order_index, title=t.title, type=t.type,
                            est_minutes=t.est_minutes, due_date=t.due_date, resource_ref=t.resource_ref) for t in tasks]
     )
+
+@router.delete("/{plan_id}", status_code=204)
+def delete_plan(plan_id: int, s: Session = Depends(get_session)):
+    plan = s.get(Plan, plan_id)
+    if not plan:
+        raise HTTPException(404, "Plan not found")
+    # ORM-level cascade (we set cascade="all, delete-orphan" on relationships)
+    s.delete(plan)
+    s.commit()
+    return Response(status_code=204)
