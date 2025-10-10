@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import CORS_ORIGINS
 from app.db.session import init_db
-from app.api import health, plan, plans
+from app.api import health, plan, plans, rag
 from app.db import models
 
 @asynccontextmanager
@@ -31,6 +31,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(plan.router)
 app.include_router(plans.router)  
+app.include_router(rag.router)  
 
 @app.get("/", include_in_schema=False)
 def redirect_to_docs():

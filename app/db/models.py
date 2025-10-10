@@ -1,16 +1,18 @@
 from typing import Optional, List
 from datetime import datetime
-from sqlmodel import SQLModel, Field, Column, Relationship
+from sqlmodel import SQLModel, Field, Column, Relationship, JSON
 from pgvector.sqlalchemy import Vector
 
-#User entity
+#=======User entity=======
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     email: str = Field(index=True, unique=True)
     password_hash: str
     created_at: datetime = Field(default_factory=datetime.now)
 
-#Content seeding test entity
+
+
+#=======Content seeding test entity=======
 class Content(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     title: str
@@ -22,7 +24,9 @@ class Content(SQLModel, table=True):
     )
     created_at: datetime = Field(default_factory=datetime.now)
 
-#plans entities
+
+
+#=======plans entities=======
 class Plan(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
@@ -55,3 +59,24 @@ class PlanTask(SQLModel, table=True):
     resource_ref: Optional[str] = None
 
     plan: Optional[Plan] = Relationship(back_populates="tasks")
+
+#=======RAG document entities=======
+class Document(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title: str
+    tags: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.now)
+
+    #child
+    chunks: List["Chunk"] = Relationship(back_populates="document", sa_relationship_kwargs={"cascade":"all, delete-orphan"})
+
+class Chunk(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    document_id: int = Field(foreign_key="document.id", index=True)
+    order_index: int
+    text: str
+
+    embedding: list[float] = Field(sa_column=Column(Vector(768)))
+    meta: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+
+    document: Optional[Document] = Relationship(back_populates="chunks")
