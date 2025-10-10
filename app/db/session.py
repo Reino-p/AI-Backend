@@ -5,10 +5,10 @@ from app.core.config import DATABASE_URL
 engine = create_engine(DATABASE_URL, echo=False)
 
 def init_db() -> None:
-    # 1. Create all tables from models
+    # Create all tables from models
     SQLModel.metadata.create_all(engine)
 
-    # 2. Ensure pgvector index exists
+    # Ensure pgvector index exists
     with engine.connect() as conn:
         conn.execute(text("""
             CREATE INDEX IF NOT EXISTS idx_chunk_embedding_cosine

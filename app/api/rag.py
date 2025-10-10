@@ -37,7 +37,6 @@ async def rag_search(body: SearchRequest, s: Session = Depends(get_session)):
 
     qvec = await embed_text(q)  # validated vector (length == EMBED_DIM)
 
-    # use pgvector comparator so the param is typed as 'vector'
     dist = Chunk.embedding.cosine_distance(qvec)
 
     stmt = (

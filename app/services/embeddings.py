@@ -1,8 +1,8 @@
 import httpx
 from app.core.config import OLLAMA_HOST
 
-EMBED_MODEL = "nomic-embed-text"  # make sure this matches what you pulled in Ollama
-EMBED_DIM = 768                   # nomic-embed-text = 768 dims (adjust if you change model)
+EMBED_MODEL = "nomic-embed-text"
+EMBED_DIM = 768
 
 async def _post_embed(payload: dict) -> list[float]:
     async with httpx.AsyncClient(timeout=120) as client:
@@ -23,17 +23,17 @@ async def embed_text(text: str) -> list[float]:
         raise ValueError("Cannot embed empty text")
 
     # Try both payload shapes for cross-compatibility:
-    # 1) Some Ollama builds expect "prompt"
+    # Some Ollama builds expect "prompt"
     try:
         vec = await _post_embed({"model": EMBED_MODEL, "prompt": txt})
     except Exception:
-        # 2) Some accept "input" (OpenAI-like)
+        # Some accept "input" (OpenAI-like)
         vec = await _post_embed({"model": EMBED_MODEL, "input": txt})
 
     if not isinstance(vec, list) or not vec:
         raise ValueError("Embedding vector is empty")
 
-    # Optional: enforce expected dimensionality
+    # enforce expected dimensionality
     if len(vec) != EMBED_DIM:
         raise ValueError(f"Embedding dim mismatch: expected {EMBED_DIM}, got {len(vec)}")
     return vec
