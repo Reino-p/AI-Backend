@@ -4,6 +4,7 @@ import re
 from typing import Any, Optional
 from app.services.ollama_client import generate_json
 from app.schemas.plan import PlanResponse, PlanRequest
+from app.core.config import GEN_MODEL 
 
 def parse_deadline_to_days(deadline: str, today: date) -> int:
     """
@@ -80,7 +81,7 @@ async def generate_plan(req: PlanRequest) -> PlanResponse:
     for attempt in range(2):
         try:
             data: Any = await generate_json(
-                "llama3.1:8b",
+                GEN_MODEL,
                 PROMPT.format(
                     goal=req.goal,
                     level=req.level,
