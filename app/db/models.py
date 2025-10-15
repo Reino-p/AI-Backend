@@ -1,5 +1,5 @@
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, date
 from sqlmodel import SQLModel, Field, Column, Relationship, JSON
 from pgvector.sqlalchemy import Vector
 
@@ -9,8 +9,6 @@ class User(SQLModel, table=True):
     email: str = Field(index=True, unique=True)
     password_hash: str
     created_at: datetime = Field(default_factory=datetime.now)
-
-
 
 #=======Content seeding test entity=======
 class Content(SQLModel, table=True):
@@ -23,8 +21,6 @@ class Content(SQLModel, table=True):
         sa_column=Column(Vector(768))
     )
     created_at: datetime = Field(default_factory=datetime.now)
-
-
 
 #=======plans entities=======
 class Plan(SQLModel, table=True):
@@ -80,3 +76,19 @@ class Chunk(SQLModel, table=True):
     meta: Optional[dict] = Field(default=None, sa_column=Column(JSON))
 
     document: Optional[Document] = Relationship(back_populates="chunks")
+
+#=======Task Progress entities=======
+class StudySession(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    plan_id: int = Field(foreign_key="plan.id")
+    started_at: datetime = Field(default_factory=datetime.now)
+    ended_at: Optional[datetime] = None
+
+class TaskProgress(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    task_id: int = Field(foreign_key="plantask.id")
+    started_at: datetime = Field(default_factory=datetime.now)
+    finished_at: Optional[datetime] = None
+    outcome: str  = Field(regex="^(done|partial|skipped)$")
+    notes: Optional[str] = None
+    rating: Optional[int] = Field(default=None)
