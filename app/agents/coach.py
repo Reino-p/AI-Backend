@@ -3,6 +3,7 @@ from typing import List
 from app.schemas.coach import CoachDecision
 from app.services.ollama_client import generate_json
 from app.core.config import GEN_MODEL
+from app.utils.url_check import is_valid_url
 
 PROMPT = """You are a learning coach that adapts a study plan.
 
@@ -59,4 +60,14 @@ async def coach_decide(task_title: str,
         ),
         options={"temperature": 0.2, "num_ctx": 2048}
     )
+    # clean urls
+    actions = data.get("actions") or []
+    cleaned = []
+    for a in actions:
+        rr = a.get("resource_ref")
+        if rr:
+            if not await is_valid_url(rr):
+                a["resource_ref"] = None
+        cleaned.append(a)
+    data["actions"] = cleaned
     return CoachDecision(**data)

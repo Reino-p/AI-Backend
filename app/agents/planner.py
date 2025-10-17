@@ -4,7 +4,8 @@ import re
 from typing import Any, Optional
 from app.services.ollama_client import generate_json
 from app.schemas.plan import PlanResponse, PlanRequest
-from app.core.config import GEN_MODEL 
+from app.core.config import GEN_MODEL
+from app.utils.url_check import scrub_task_links
 
 def parse_deadline_to_days(deadline: str, today: date) -> int:
     """
@@ -128,7 +129,8 @@ async def generate_plan(req: PlanRequest) -> PlanResponse:
                         "due_date": _iso(d),       # keep external schema the same
                         "resource_ref": res,
                     })
-
+                    
+                normalized = await scrub_task_links(normalized)
                 data["tasks"] = normalized
 
             plan = PlanResponse(**data)
