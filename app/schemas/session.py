@@ -1,5 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel
+from app.schemas.coach import Reflection
 
 class StartSessionRequest(BaseModel):
     plan_id: int
@@ -17,3 +18,4 @@ class CompleteTaskRequest(BaseModel):
     notes: Optional[str] = None
     rating: Optional[int] = None
     session_id: int | None = None
+    reflection: Optional[Reflection] = None

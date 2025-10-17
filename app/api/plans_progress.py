@@ -1,7 +1,7 @@
-# app/api/plans_progress.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
-from datetime import date, datetime, timedelta
+from sqlalchemy import func
+from datetime import date, timedelta
 from app.db.session import get_session
 from app.db.models import Plan, PlanTask, TaskProgress
 
@@ -13,31 +13,47 @@ def plan_progress(plan_id: int, s: Session = Depends(get_session)):
     if not plan:
         raise HTTPException(404, "Plan not found")
 
-    tasks = s.exec(select(PlanTask).where(PlanTask.plan_id == plan_id)).all()
-    total = len(tasks)
+    # total tasks for this plan
+    total = s.exec(
+        select(func.count())
+        .select_from(PlanTask)
+        .where(PlanTask.plan_id == plan_id)
+    ).one() or 0
 
-    # naive completion count: number of TaskProgress rows with outcome='done'
-    # (if multiple progress rows per task, you may want max-state)
-    done_task_ids = {tp.task_id for tp in s.exec(
-        select(TaskProgress).where(TaskProgress.outcome == "done")
-    ).all()}
-    done = sum(1 for t in tasks if t.id in done_task_ids)
+    # number of DISTINCT tasks with at least one 'done'
+    done = s.exec(
+        select(func.count(func.distinct(TaskProgress.task_id)))
+        .join(PlanTask, PlanTask.id == TaskProgress.task_id)
+        .where(PlanTask.plan_id == plan_id, TaskProgress.outcome == "done")
+    ).one() or 0
 
-    # streak: how many consecutive days with at least one 'done' (including today)
-    def had_done_on(day: date) -> bool:
-        start = datetime(day.year, day.month, day.day)
-        end = start + timedelta(days=1)
-        q = select(TaskProgress).where(
-            TaskProgress.outcome == "done",
-            TaskProgress.finished_at >= start,
-            TaskProgress.finished_at < end
+    # dates with at least one 'done' (returns scalars, not tuples)
+    done_dates = s.exec(
+        select(
+            func.date(
+                func.coalesce(TaskProgress.finished_at, TaskProgress.started_at)
+            )
         )
-        return s.exec(q).first() is not None
+        .join(PlanTask, PlanTask.id == TaskProgress.task_id)
+        .where(PlanTask.plan_id == plan_id, TaskProgress.outcome == "done")
+        .group_by(
+            func.date(
+                func.coalesce(TaskProgress.finished_at, TaskProgress.started_at)
+            )
+        )
+    ).all()
+    date_set = {d for d in done_dates if d is not None}
 
+    # streak ending today
     streak = 0
-    d = date.today()
-    while had_done_on(d):
+    cur = date.today()
+    while cur in date_set:
         streak += 1
-        d = d - timedelta(days=1)
+        cur = cur - timedelta(days=1)
 
-    return {"plan_id": plan_id, "total": total, "done": done, "streak_days": streak}
+    return {
+        "plan_id": plan_id,
+        "total": int(total),
+        "done": int(done),
+        "streak_days": streak
+    }

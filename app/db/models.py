@@ -92,3 +92,4 @@ class TaskProgress(SQLModel, table=True):
     outcome: str  = Field(regex="^(done|partial|skipped)$")
     notes: Optional[str] = None
     rating: Optional[int] = Field(default=None)
+    session_id: int | None = Field(default=None, foreign_key="studysession.id")
